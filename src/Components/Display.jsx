@@ -9,7 +9,12 @@ const Display = ({ value, operator, firstNumber }) => {
           </>
         )}
       </div>
-      <div className={`display ${value === 'ERR' ? 'display-err' : ''}`}>
+      <div
+        className={`display ${value === 'ERR' ? 'display-err' : ''}`}
+        role="status"
+        aria-live="polite"
+        aria-label={value === 'ERR' ? 'Error' : `Result ${value}`}
+      >
         {value}
       </div>
     </div>

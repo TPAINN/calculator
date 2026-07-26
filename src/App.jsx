@@ -1,79 +1,130 @@
-import { useState } from 'react';
-import Button from './Components/Button';
+import { useState, useEffect } from 'react';
 import ButtonPad from './Components/ButtonPad';
 import Display from './Components/Display';
 import './App.css';
 
 
+const OPERATORS = ['÷', '×', '-', '+'];
+const MAX_MAGNITUDE = 99999999;
+
+// Επιστρέφει το αποτέλεσμα ως string, ή 'ERR' για ό,τι δεν μπορεί να δείξει η
+// οθόνη: διαίρεση με το μηδέν (Infinity), 0/0 (NaN), ή υπερχείλιση.
+function compute(a, operator, b) {
+  let result;
+  switch (operator) {
+    case '÷': result = a / b; break;
+    case '×': result = a * b; break;
+    case '-': result = a - b; break;
+    case '+': result = a + b; break;
+    default: return null;
+  }
+  if (!Number.isFinite(result) || Math.abs(result) > MAX_MAGNITUDE) return 'ERR';
+  return String(parseFloat(result.toFixed(10)));
+}
+
 function App() {
   const [display, setDisplay] = useState('0');
-  const [firstNymber, setFirstNumber] = useState(null);
+  const [firstNumber, setFirstNumber] = useState(null);
   const [operator, setOperator] = useState(null);
   const [waitingForSecondNumber, setWaitingForSecondNumber] = useState(false);
+  // true αμέσως μετά το '=' — το επόμενο ψηφίο ξεκινά νέο αριθμό αντί να
+  // κολλήσει πάνω στο αποτέλεσμα
+  const [justEvaluated, setJustEvaluated] = useState(false);
+
+  const reset = () => {
+    setDisplay('0');
+    setFirstNumber(null);
+    setOperator(null);
+    setWaitingForSecondNumber(false);
+    setJustEvaluated(false);
+  };
 
   const handleButtonClick = (label) => {
+    // κάθε πλήκτρο εκτός του AC είναι ανενεργό όσο δείχνουμε σφάλμα
+    if (display === 'ERR' && label !== 'AC') return;
+
     if (label === 'AC') {
-      setDisplay('0');
-      setFirstNumber(null);
-      setOperator(null);
-      setWaitingForSecondNumber(false);
-    } else if (label === 'C') {
+      reset();
+      return;
+    }
+
+    if (label === 'C') {
       if (waitingForSecondNumber) {
-        setDisplay(String(firstNymber));
+        setDisplay(String(firstNumber));
         setWaitingForSecondNumber(false);
       } else {
         setDisplay('0');
       }
-    } else if (label === '±') {
-      setDisplay(String(parseFloat(display) * -1));
-    } else if (label === '÷' || label === '×' || label === '-' || label === '+') {
-      setFirstNumber(parseFloat(display));
-      setOperator(label);
-      setWaitingForSecondNumber(true);
-    } else if (label === '=') {
-      if (firstNymber !== null && operator) {
-        const secondNumber = parseFloat(display);
-        let result;
-        switch (operator) {
-          case '÷':
-            result = firstNymber / secondNumber;
-            break;
-          case '×':
-            result = firstNymber * secondNumber;
-            break;
-          case '-':
-            result = firstNymber - secondNumber;
-            break;
-          case '+':
-            result = firstNymber + secondNumber;
-            break;
-          default:
-            return;
-        }
-        if (result > 99999999 || result < -99999999) {
-          setDisplay('ERR');
-        } else {
-          setDisplay(String(parseFloat(result.toFixed(10))));
-        }
-        setFirstNumber(null);
-        setOperator(null);
-        setWaitingForSecondNumber(false);
-      }
-    } else {
-      if (waitingForSecondNumber) {
-        setDisplay(label);
-        setWaitingForSecondNumber(false);
-      } else {
-        if (label === '.') {
-          if (display.includes('.')) return;
-          const decimals = display.split('.')[1];
-          if (decimals && decimals.length >= 3) return;
-        }
-        if (display.length >= 8) return;
-        setDisplay(display === '0' && label !== '.' ? label : display + label);
-      }
+      setJustEvaluated(false);
+      return;
     }
+
+    if (label === '±') {
+      setDisplay((d) => (d.startsWith('-') ? d.slice(1) : `-${d}`));
+      return;
+    }
+
+    if (OPERATORS.includes(label)) {
+      // αλυσίδα: 2 + 3 + → υπολόγισε το 2+3 πριν κρατήσεις τον νέο τελεστή
+      if (operator !== null && firstNumber !== null && !waitingForSecondNumber) {
+        const result = compute(firstNumber, operator, parseFloat(display));
+        setDisplay(result);
+        setFirstNumber(result === 'ERR' ? null : parseFloat(result));
+        setOperator(result === 'ERR' ? null : label);
+        setWaitingForSecondNumber(result !== 'ERR');
+      } else {
+        setFirstNumber(parseFloat(display));
+        setOperator(label);
+        setWaitingForSecondNumber(true);
+      }
+      setJustEvaluated(false);
+      return;
+    }
+
+    if (label === '=') {
+      if (firstNumber === null || !operator) return;
+      setDisplay(compute(firstNumber, operator, parseFloat(display)));
+      setFirstNumber(null);
+      setOperator(null);
+      setWaitingForSecondNumber(false);
+      setJustEvaluated(true);
+      return;
+    }
+
+    // ψηφίο ή υποδιαστολή
+    if (waitingForSecondNumber || justEvaluated) {
+      setDisplay(label === '.' ? '0.' : label);
+      setWaitingForSecondNumber(false);
+      setJustEvaluated(false);
+      return;
+    }
+
+    if (label === '.') {
+      if (display.includes('.')) return;
+    } else {
+      const decimals = display.split('.')[1];
+      if (decimals && decimals.length >= 3) return;
+    }
+    if (display.replace('-', '').length >= 8) return;
+    setDisplay(display === '0' && label !== '.' ? label : display + label);
   };
+
+  // Το πληκτρολόγιο οδηγεί τα ίδια πλήκτρα με το ποντίκι.
+  useEffect(() => {
+    const KEYS = {
+      '/': '÷', '*': '×', '-': '-', '+': '+',
+      Enter: '=', '=': '=', '.': '.', ',': '.',
+      Escape: 'AC', Backspace: 'C', Delete: 'C',
+    };
+    const onKeyDown = (e) => {
+      const key = /^[0-9]$/.test(e.key) ? e.key : KEYS[e.key];
+      if (!key) return;
+      e.preventDefault();
+      handleButtonClick(key);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  });
 
   return (
     <div className='calculator'>
@@ -81,7 +132,7 @@ function App() {
         <span className='calculator-title'>Calculator</span>
         <span className='calculator-author'>by Apostolos Peiniris</span>
       </div>
-      <Display value={display} operator={operator} firstNumber={firstNymber} />
+      <Display value={display} operator={operator} firstNumber={firstNumber} />
       <ButtonPad onButtonClick={handleButtonClick} />
     </div>
   );
