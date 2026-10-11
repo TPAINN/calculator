@@ -1,41 +1,29 @@
-<div align="center">
+# Calculator
 
-<img src="docs/banner.svg" alt="Calculator — a minimal four-function calculator built with React" width="100%">
+A four-function calculator in React. Built to practice state handling and component composition. No UI kit, no state library, no backend.
 
-<br>
+[Live demo](https://calculator-tpainn.vercel.app)
 
-[![Live demo](https://img.shields.io/badge/%E2%96%B6_live_demo-calculator--tpainn.vercel.app-a78bfa?style=for-the-badge&labelColor=0d0a18)](https://calculator-tpainn.vercel.app)
+![Calculator](docs/screenshot.png)
 
-![React](https://img.shields.io/badge/React-0d0a18?style=flat-square&logo=react&logoColor=a78bfa)
-![Vite](https://img.shields.io/badge/Vite-0d0a18?style=flat-square&logo=vite&logoColor=f472b6)
+## Behavior
 
-</div>
+- Operations `+ - x /`, decimals (up to 3 places) and a sign toggle
+- `AC` clears everything, `C` clears the current entry
+- Input limits: 8 digits, one decimal point
+- Division by zero and overflow show `ERR`, which only `AC` clears
+- Keyboard input: digits and operators (`/` and `*` map to division and multiplication), `Backspace` deletes
 
-<br>
+## Structure
 
-![Calculator screenshot](docs/screenshot.png)
+`src/App.jsx` holds the calculator state and logic. `src/Components` contains `Display`, `ButtonPad` and `Button`.
 
-A calculator that does exactly four things and does them cleanly. Built to learn React state and component composition: no UI kit, no state library, no backend.
-
-## Features
-
-- Four operations (`+ − × ÷`), decimals (up to 3 places), sign toggle `±`
-- **AC / C** clear everything or just the current entry
-- Guards against bad input: 8-digit cap, one decimal point, a clear `ERR` state (for example divide by zero) that only `AC` can leave
-- **Keyboard input.** Type digits and operators (`/` and `*` map to `÷` and `×`), `Backspace` to delete
-- Small component tree (`src/Components`: `Display`, `ButtonPad`, `Button`) with the calculator logic in one place
-- Deploys as a static Vite build
-
-## Run locally
+## Run
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # production build in dist/
+npm run dev
+npm run build
 ```
 
-## Stack
-
-React · Vite · plain CSS · deployed on Vercel
-
-<div align="center"><sub>Built by <a href="https://github.com/TPAINN">Apostolos Peiniris</a></sub></div>
+React, Vite, plain CSS. Deployed on Vercel.
